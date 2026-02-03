@@ -19,31 +19,51 @@ export interface GoogleBook {
   }
 }
 
-export interface GoogleBooksResponse {
-  items?: GoogleBook[]
-  totalItems: number
+interface OpenLibraryBook {
+  key: string
+  title: string
+  author_name?: string[]
+  first_publish_year?: number
+  cover_i?: number
+  isbn?: string[]
+}
+
+interface OpenLibraryResponse {
+  docs: OpenLibraryBook[]
+  numFound: number
+}
+
+// Convert Open Library format to our GoogleBook format for compatibility
+function convertToGoogleBookFormat(book: OpenLibraryBook): GoogleBook {
+  const isbn = book.isbn?.[0]
+  return {
+    id: book.key,
+    volumeInfo: {
+      title: book.title,
+      authors: book.author_name,
+      publishedDate: book.first_publish_year?.toString(),
+      imageLinks: book.cover_i ? {
+        thumbnail: `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`,
+      } : undefined,
+      industryIdentifiers: isbn ? [{ type: 'ISBN_13', identifier: isbn }] : undefined,
+    }
+  }
 }
 
 export async function searchGoogleBooks(query: string): Promise<GoogleBook[]> {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY
-  const baseUrl = 'https://www.googleapis.com/books/v1/volumes'
+  const baseUrl = 'https://openlibrary.org/search.json'
 
   const params = new URLSearchParams({
     q: query,
-    maxResults: '10',
-    printType: 'books',
+    limit: '10',
   })
-
-  if (apiKey) {
-    params.append('key', apiKey)
-  }
 
   const response = await fetch(`${baseUrl}?${params}`)
   if (!response.ok) {
-    throw new Error(`Google Books API error: ${response.status}`)
+    throw new Error(`Open Library API error: ${response.status}`)
   }
-  const data: GoogleBooksResponse = await response.json()
-  return data.items || []
+  const data: OpenLibraryResponse = await response.json()
+  return data.docs.map(convertToGoogleBookFormat)
 }
 
 export function extractISBN(book: GoogleBook): string | null {
@@ -65,12 +85,5 @@ export function getCoverUrl(book: GoogleBook): string | null {
   const imageLinks = book.volumeInfo.imageLinks
   if (!imageLinks) return null
 
-  // Get the thumbnail and upgrade to higher resolution
-  const thumbnail = imageLinks.thumbnail || imageLinks.smallThumbnail
-  if (!thumbnail) return null
-
-  // Replace zoom parameter for better quality and use https
-  return thumbnail
-    .replace('http://', 'https://')
-    .replace('zoom=1', 'zoom=2')
+  return imageLinks.thumbnail || imageLinks.smallThumbnail || null
 }

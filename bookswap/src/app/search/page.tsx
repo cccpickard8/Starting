@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import BookCard from '@/components/BookCard'
 import type { Book, Profile } from '@/types/database'
@@ -12,13 +12,10 @@ export default function SearchPage() {
   const [books, setBooks] = useState<BookWithProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [condition, setCondition] = useState<string>('')
-  const supabase = createClient()
+  const [activeQuery, setActiveQuery] = useState('')
+  const supabase = useMemo(() => createClient(), [])
 
-  useEffect(() => {
-    fetchBooks()
-  }, [condition])
-
-  const fetchBooks = async (searchQuery?: string) => {
+  const fetchBooks = useCallback(async (searchQuery?: string) => {
     setLoading(true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let queryBuilder = (supabase.from('books') as any)
@@ -37,11 +34,15 @@ export default function SearchPage() {
     const { data } = await queryBuilder.limit(50)
     setBooks((data as BookWithProfile[]) || [])
     setLoading(false)
-  }
+  }, [supabase, condition])
+
+  useEffect(() => {
+    fetchBooks(activeQuery)
+  }, [fetchBooks, activeQuery])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    fetchBooks(query)
+    setActiveQuery(query)
   }
 
   return (
@@ -51,8 +52,8 @@ export default function SearchPage() {
 
       {/* Search and Filters */}
       <div className="mt-8 flex flex-col md:flex-row gap-4">
-        <form onSubmit={handleSearch} className="flex-1">
-          <div className="relative">
+        <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+          <div className="relative flex-1">
             <input
               type="text"
               value={query}
@@ -69,6 +70,12 @@ export default function SearchPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+          <button
+            type="submit"
+            className="px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
+          >
+            Search
+          </button>
         </form>
         <select
           value={condition}
@@ -108,7 +115,7 @@ export default function SearchPage() {
               onClick={() => {
                 setQuery('')
                 setCondition('')
-                fetchBooks()
+                setActiveQuery('')
               }}
               className="mt-4 text-emerald-600 hover:text-emerald-700 font-medium"
             >

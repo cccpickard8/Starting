@@ -31,6 +31,7 @@ export default function AddBookForm() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<GoogleBook[]>([])
   const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState<BookFormData>({
@@ -50,11 +51,19 @@ export default function AddBookForm() {
 
     setSearching(true)
     setSearchResults([])
-    setError(null)
+    setSearchError(null)
 
-    const results = await searchGoogleBooks(searchQuery)
-    setSearchResults(results)
-    setSearching(false)
+    try {
+      const results = await searchGoogleBooks(searchQuery)
+      setSearchResults(results)
+      if (results.length === 0) {
+        setSearchError('No books found. Try a different search term.')
+      }
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : 'Failed to search Google Books')
+    } finally {
+      setSearching(false)
+    }
   }
 
   const selectBook = (book: GoogleBook) => {
@@ -133,6 +142,13 @@ export default function AddBookForm() {
             </button>
           </div>
         </form>
+
+        {/* Search Error */}
+        {searchError && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+            {searchError}
+          </div>
+        )}
 
         {/* Search Results */}
         {searchResults.length > 0 && (

@@ -38,17 +38,12 @@ export async function searchGoogleBooks(query: string): Promise<GoogleBook[]> {
     params.append('key', apiKey)
   }
 
-  try {
-    const response = await fetch(`${baseUrl}?${params}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch from Google Books API')
-    }
-    const data: GoogleBooksResponse = await response.json()
-    return data.items || []
-  } catch (error) {
-    console.error('Error searching Google Books:', error)
-    return []
+  const response = await fetch(`${baseUrl}?${params}`)
+  if (!response.ok) {
+    throw new Error(`Google Books API error: ${response.status}`)
   }
+  const data: GoogleBooksResponse = await response.json()
+  return data.items || []
 }
 
 export function extractISBN(book: GoogleBook): string | null {

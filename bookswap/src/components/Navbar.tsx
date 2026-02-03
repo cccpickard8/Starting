@@ -12,6 +12,9 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const supabase = createClient()
 
+  // Hide navbar on home page for logged out users
+  const isHomePage = pathname === '/'
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -31,8 +34,13 @@ export default function Navbar() {
     window.location.href = '/'
   }
 
+  // Don't show navbar on home page for non-logged in users
+  if (isHomePage && !user) {
+    return null
+  }
+
   const navLinks = [
-    { href: '/search', label: 'Browse Books' },
+    { href: '/search', label: 'Browse' },
     ...(user ? [
       { href: '/books/add', label: 'Add Book' },
       { href: '/messages', label: 'Messages' },
@@ -41,27 +49,29 @@ export default function Navbar() {
   ]
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between h-16">
+          {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2">
-              <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
+              <div className="flex items-center gap-0.5">
+                <div className="w-7 h-7 bg-green-700 rounded-lg"></div>
+                <div className="w-3 h-3 bg-green-700 rounded-sm -ml-1.5 -mt-3"></div>
+              </div>
               <span className="text-xl font-bold text-gray-900">BookSwap</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-8">
             {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={`text-sm font-medium transition-colors ${
                   pathname === link.href
-                    ? 'text-emerald-600'
+                    ? 'text-green-700'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -76,7 +86,7 @@ export default function Navbar() {
                 Logout
               </button>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <Link
                   href="/login"
                   className="text-sm font-medium text-gray-600 hover:text-gray-900"
@@ -85,7 +95,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/signup"
-                  className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                  className="bg-green-700 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-green-800 transition-colors"
                 >
                   Sign Up
                 </Link>
@@ -97,7 +107,7 @@ export default function Navbar() {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 p-2"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {menuOpen ? (
@@ -112,16 +122,16 @@ export default function Navbar() {
 
         {/* Mobile Navigation */}
         {menuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200">
+          <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col gap-4">
               {navLinks.map(link => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
-                  className={`text-sm font-medium ${
+                  className={`text-sm font-medium py-2 ${
                     pathname === link.href
-                      ? 'text-emerald-600'
+                      ? 'text-green-700'
                       : 'text-gray-600'
                   }`}
                 >
@@ -131,16 +141,19 @@ export default function Navbar() {
               {user ? (
                 <button
                   onClick={handleLogout}
-                  className="text-sm font-medium text-gray-600 text-left"
+                  className="text-sm font-medium text-gray-600 text-left py-2"
                 >
                   Logout
                 </button>
               ) : (
                 <>
-                  <Link href="/login" className="text-sm font-medium text-gray-600">
+                  <Link href="/login" className="text-sm font-medium text-gray-600 py-2">
                     Login
                   </Link>
-                  <Link href="/signup" className="text-sm font-medium text-emerald-600">
+                  <Link
+                    href="/signup"
+                    className="text-sm font-medium bg-green-700 text-white text-center py-3 rounded-full"
+                  >
                     Sign Up
                   </Link>
                 </>
